@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include "lexer.hpp"
+#include "parser.hpp"
 
 int main() {
 	std::string filename = "test/test.cpjs";
@@ -18,6 +19,8 @@ int main() {
 
 	Lexer lexer {};
 	lexer.Lex(filecontent);
+	Parser parser {lexer};
+	parser.Parse();
 
 	free(filecontent);
 	return 0;

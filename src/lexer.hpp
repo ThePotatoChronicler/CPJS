@@ -5,22 +5,28 @@
 class Lexer {
 public:
 	enum token {
-		TOKEN_EOF,
-		TOKEN_FUN,
-		TOKEN_IDENTIFIER,
-		TOKEN_NUM,
-		TOKEN_RETURN,
+		FUN,
+		RETURN,
 
-		TOKEN_LBRACKET, // [
-		TOKEN_RBRACKET, // ]
+		IDENTIFIER,
 
-		TOKEN_LBRACE, // {
-		TOKEN_RBRACE, // }
+		INTEGER,
+		DECIMAL,
+		STRING,
 
-		TOKEN_LPAREN, // (
-		TOKEN_RPAREN, // )
+		LBRACKET,
+		RBRACKET,
 
-		TOKEN_SEMICOLON
+		LCURLY,
+		RCURLY,
+
+		LPAREN,
+		RPAREN,
+
+		SEMICOLON,
+		COMMA,
+
+		TOKEN_EOF
 	};
 
 	std::vector<std::pair<token, std::string>> Lex(char* data);
@@ -34,10 +40,11 @@ public:
 	Lexer operator=(Lexer lexer) = delete;
 	~Lexer() = default;
 
+	std::vector<std::tuple<token, std::string, unsigned int>> tokens;
 private:
-	std::vector<std::pair<token, std::string>> tokens;
 	std::string currentLexeme;
 	unsigned int currentLine;
 	unsigned int index;
 	bool nextToken(char* data);
+	token identifyToken();
 };

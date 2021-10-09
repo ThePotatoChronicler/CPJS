@@ -1,4 +1,5 @@
 fun main() {
-    retu
-    rn 0;
+    return 0;
 }
+
+fun das()

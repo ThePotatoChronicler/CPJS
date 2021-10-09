@@ -3,11 +3,14 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <tuple>
+#include <regex>
 
-using token = Lexer::token;
+using tokens = Lexer::token;
 
-std::unordered_map<std::string, token> keywords = {
-		{"dd", token::TOKEN_EOF}
+std::unordered_map<std::string, tokens> keywords = { // NOLINT(cert-err58-cpp)
+		{"fun",    tokens::FUN},
+		{"return", tokens::RETURN}
 };
 
 /**
@@ -23,7 +26,7 @@ bool Lexer::nextToken(char *data) {
 		// in currentLexeme and return. if currentLexeme contains something then just return and process this
 		// character at the next time
 		if (data[index] == ';' || data[index] == '(' || data[index] == ')' || data[index] == '{'
-		|| data[index] == '}' || data[index] == '[' || data[index] == ']') {
+		|| data[index] == '}' || data[index] == '[' || data[index] == ']' || data[index] == ',') {
 			if (currentLexeme.empty()) {
 				currentLexeme = std::string(1, data[index]);
 				++index;
@@ -60,16 +63,63 @@ bool Lexer::nextToken(char *data) {
 	}
 }
 
-std::vector<std::pair<token, std::string>> Lexer::Lex(char *data) {
-	std::vector<std::string> lexemes;
+std::vector<std::pair<tokens, std::string>> Lexer::Lex(char *data) {
 	while (!nextToken(data)) {
-		lexemes.push_back(currentLexeme);
+		tokens.emplace_back(identifyToken(), currentLexeme, currentLine);
 		currentLexeme.clear();
 	}
-	std::cout << "successfully ate the file data!" << std::endl;
+	tokens.emplace_back(token::TOKEN_EOF, "", currentLine);
+	std::cout << "successfully ate the file data!" << std::endl << std::flush;
 
-	for (const auto& lexeme : lexemes) {
-		std::cout << "Lexeme " << lexeme << " identified." << std::endl;
+	for (const auto& token : tokens) {
+		const auto& [_token, string, line] = token;
+		if (_token != TOKEN_EOF) {
+			std::cout << "Lexeme " << string << " identified." << std::endl << std::flush;
+		}
 	}
 	return {};
+}
+
+tokens Lexer::identifyToken() {
+	if (keywords.contains(currentLexeme)) {
+		return keywords[currentLexeme];
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^[a-zA-Z]+[\\w]*$"))) {
+		return token::IDENTIFIER;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\".*\"")) ||
+		std::regex_match(currentLexeme, std::regex("^'.*'$")))
+		return token::STRING;
+	else if (std::regex_match(currentLexeme, std::regex("^[\\d]+$"))) {
+		return token::INTEGER;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^[\\d.,]+$"))) {
+		return token::DECIMAL;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^;$"))) {
+		return token::SEMICOLON;
+	}
+
+
+	else if (std::regex_match(currentLexeme, std::regex("^\\{$"))) {
+		return token::LCURLY;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\\}$"))) {
+		return token::RCURLY;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\\[$"))) {
+		return token::LBRACKET;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\\]$"))) {
+		return token::RBRACKET;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\\($"))) {
+		return token::LPAREN;
+	}
+	else if (std::regex_match(currentLexeme, std::regex("^\\)$"))) {
+		return token::RPAREN;
+	}
+	else {
+		throw std::runtime_error("Invalid identifier " + currentLexeme + " at line " + std::to_string(currentLine + 1));
+	}
 }

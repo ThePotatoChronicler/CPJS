@@ -35,9 +35,8 @@ public:
 };
 
 class IdentifierAST : public ExprAST {
-	std::string name;
-
 public:
+	std::string name;
 	explicit IdentifierAST(std::string name) : name{std::move(name)} {}
 
 	void Dispatch(AbstractDispatcher& dispatcher) override {
@@ -46,11 +45,11 @@ public:
 };
 
 class PrototypeAST : public ExprAST {
-	std::string name;
-	std::unique_ptr<std::vector<IdentifierAST>> args;
-
 public:
-	PrototypeAST(std::string name, std::unique_ptr<std::vector<IdentifierAST>> args) :
+	std::string name;
+	std::vector<std::unique_ptr<IdentifierAST>> args;
+
+	PrototypeAST(std::string name, std::vector<std::unique_ptr<IdentifierAST>> args) :
 	name{std::move(name)}, args{std::move(args)} {}
 
 	void Dispatch(AbstractDispatcher& dispatcher) override {
@@ -59,10 +58,10 @@ public:
 };
 
 class FunctionAST : public ExprAST {
+public:
 	std::unique_ptr<PrototypeAST> prototype;
 	std::vector<std::unique_ptr<ExprAST>> body;
 
-public:
 	FunctionAST(std::unique_ptr<PrototypeAST> prototype, std::vector<std::unique_ptr<ExprAST>> body) :
 	prototype{std::move(prototype)}, body{std::move(body)} {}
 
@@ -72,8 +71,8 @@ public:
 };
 
 class ReturnAST : public ExprAST {
-	std::unique_ptr<ExprAST> expression;
 public:
+	std::unique_ptr<ExprAST> expression;
 	explicit ReturnAST(std::unique_ptr<ExprAST> expression) : expression{std::move(expression)} {}
 
 	void Dispatch(AbstractDispatcher& dispatcher) override {
@@ -82,9 +81,9 @@ public:
 };
 
 class LiteralAST : public ExprAST {
+public:
 	std::string literal;
 	variabletypes type;
-public:
 	explicit LiteralAST(std::string literal, variabletypes type) : literal{std::move(literal)}, type{type} {}
 
 	void Dispatch(AbstractDispatcher& dispatcher) override {
@@ -95,29 +94,29 @@ public:
 std::unique_ptr<PrototypeAST> Parser::ParsePrototype() {
 	nextToken();
 	if (token != tokens::IDENTIFIER)
-		throw std::runtime_error("IDIOT WHY DID YOU PUT SOMETHING ELSE THAN IDENTIFIER AFTER FUNCTION??");
+		throw std::runtime_error("Excepted identifier after fun");
 	std::string name = value;
 
 	nextToken();
 	if (token != tokens::LPAREN)
-		throw std::runtime_error("expected ( after " + name);
+		throw std::runtime_error("expected '(' after " + name);
 	nextToken();
 
-	std::vector<IdentifierAST> args;
+	std::vector<std::unique_ptr<IdentifierAST>> args;
 	if (token == tokens::IDENTIFIER) {
 		while (true) {
-			if (token != tokens::IDENTIFIER && token != tokens::COMMA )
+			if (token != tokens::IDENTIFIER && token != tokens::COMMA)
 				break;
-			args.emplace_back(value);
+			args.emplace_back(std::make_unique<IdentifierAST>(value));
 			nextToken();
 		}
 	}
 	if (token == tokens::RPAREN) {
 		nextToken();
-		return std::make_unique<PrototypeAST>(name, std::make_unique<std::vector<IdentifierAST>>(args));
+		return std::make_unique<PrototypeAST>(name, std::move(args));
 	}
 	else {
-		throw std::runtime_error("Excepted ) at prototype, but got " + value);
+		throw std::runtime_error("Excepted ')' at prototype, but got " + value);
 	}
 }
 
@@ -130,7 +129,6 @@ std::unique_ptr<FunctionAST> Parser::ParseFunction() {
 			if (token == tokens::TOKEN_EOF)
 				throw std::runtime_error("Excepted } but got EOF instead");
 			body.emplace_back(ParseExpression());
-			nextToken();
 		}
 		nextToken();
 	}
@@ -156,12 +154,12 @@ std::unique_ptr<LiteralAST> Parser::ParseLiteral() {
 		if (value > "18446744073709551615") {
 			throw std::runtime_error("Integer literal " + value + " too large.");
 		}
-
+		std::string integerLiteral = value;
 		nextToken();
-		return std::make_unique<LiteralAST>(value, variableTypes::INT);
+		return std::make_unique<LiteralAST>(integerLiteral, variableTypes::INT);
 	}
 	nextToken();
-	return nullptr;
+	throw std::runtime_error("Expected literal but got " + value + " instead.");
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
@@ -195,7 +193,7 @@ public:
 		
 	}
 	void Dispatch(ReturnAST &return_) override {
-		
+
 	}
 };
 

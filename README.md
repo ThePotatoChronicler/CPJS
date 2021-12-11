@@ -1,2 +1,2 @@
 # CPJS
-A programming language thats mix of Kotlin, Javascript and C++.
+A programming language that's a mix of Kotlin, Javascript and C++.
